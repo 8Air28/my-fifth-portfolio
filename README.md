@@ -1,29 +1,36 @@
-# My Fifth Portfolio
+# 多機能文章生成ツール（Pollinations対応）
 
-This is a portfolio project:  
-A **text generation tool** where you can input a keyword, set text length, and generate essays or creative writing automatically using an external API.
+キーワードや条件を指定すると、無料API（Pollinations）を使って文章を生成するWebアプリです。  
+リアルタイムで文章を作成し、保存や修正も可能です。
 
-## Features
-- Generate text by specifying:
-  - **Keyword**
-  - **Language**
-  - **Length**
-- Regenerate or refine text with new instructions
-- Simple HTML/CSS frontend + Node.js backend
+---
 
-## Tech Stack
-- **Frontend**: HTML, CSS, JavaScript
-- **Backend**: Node.js (Express)
-- **Deployment**: Vercel
-- **Version Control**: GitHub
+## 🌐 公開URL
+[アクセスはこちら](https://my-fifth-portfolio-bsu4-mul4c5wbn-8air28s-projects.vercel.app)
 
-## Demo
-👉 [Live Site on Vercel](https://your-vercel-url.vercel.app)
+---
 
-## How to Run Locally
+## 💡 主な機能
+- キーワード指定による文章生成
+- 言語、トーン、長さ、出力形式の選択
+- 追加指示による文章の調整
+- 生成結果の履歴保存と再利用
+- 生成結果のコピー・保存・修正・キャンセル
+- 連続生成（同時複数タスク対応）
+
+---
+
+## 🛠 使用技術
+- HTML / CSS / JavaScript
+- Node.js / Express
+- Pollinations API
+- Vercel（デプロイ）
+
+---
+
+## 🚀 ローカルでの起動方法
 ```bash
-# Install dependencies
+git clone https://github.com/8Air28/my-fifth-portfolio.git
+cd my-fifth-portfolio
 npm install
-
-# Run locally
-node server.js
+npm start
