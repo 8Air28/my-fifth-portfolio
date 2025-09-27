@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>多機能文章生成ツール（Pollinations）</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --card: #ffffff;
+        --muted: #6b7280;
+        --accent: #2563eb;
+        --success: #16a34a;
+        --danger: #ef4444;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto,
+          "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+        background: var(--bg);
+        margin: 0;
+        padding: 24px;
+        color: #0f172a;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 20px;
+      }
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+      .card {
+        background: var(--card);
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 6px 18px rgba(8, 18, 40, 0.06);
+        margin-bottom: 16px;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 220px;
+        gap: 12px;
+        align-items: start;
+      }
+      label {
+        font-size: 13px;
+        color: var(--muted);
+        display: block;
+        margin-bottom: 6px;
+      }
+      input[type="text"],
+      select,
+      textarea,
+      input[type="number"] {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #e6e9ef;
+        border-radius: 8px;
+        background: #fff;
+        font-size: 14px;
+        color: #0f172a;
+      }
+      textarea {
+        min-height: 84px;
+        resize: vertical;
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+      }
+      button {
+        background: var(--accent);
+        color: #fff;
+        border: 0;
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      button.secondary {
+        background: #fff;
+        color: var(--accent);
+        border: 1px solid #e6e9ef;
+      }
+      button.warn {
+        background: var(--danger);
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .options {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .result-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 12px;
+        margin-top: 16px;
+      }
+      .task {
+        border-radius: 10px;
+        padding: 12px;
+        border: 1px solid #e6eefc;
+        background: linear-gradient(180deg, #fff, #fbfdff);
+      }
+      .task-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .badge {
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: #eef6ff;
+        color: var(--accent);
+      }
+      .status {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .task-body {
+        white-space: pre-wrap;
+        font-size: 14px;
+        background: #ffffff;
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid #eef2ff;
+        min-height: 80px;
+        overflow: auto;
+      }
+      .task-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+      }
+      .small {
+        font-size: 12px;
+        padding: 6px 8px;
+        border-radius: 8px;
+      }
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid #cbd5e1;
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        display: inline-block;
+        animation: spin 1s linear infinite;
+        vertical-align: middle;
+        margin-right: 6px;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .history-list {
+        max-height: 160px;
+        overflow: auto;
+        margin-top: 8px;
+        border: 1px solid #eef2ff;
+        padding: 8px;
+        border-radius: 8px;
+        background: #fff;
+      }
+      .history-item {
+        padding: 6px;
+        border-bottom: 1px dashed #f1f5f9;
+        font-size: 13px;
+      }
+      .flex {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .grow {
+        flex: 1;
+      }
+      footer {
+        margin-top: 20px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      @media (max-width: 720px) {
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>多機能文章生成ツール（無料API対応）</h1>
+
+      <div class="card">
+        <div class="form-grid">
+          <div>
+            <label>キーワード（必須）</label>
+            <input id="keyword" type="text" placeholder="例: 海, AI, 自然" />
+            <div style="height: 8px"></div>
+
+            <label>追加指示（オプション）</label>
+            <input
+              id="extraPrompt"
+              type="text"
+              placeholder="例: 子ども向けに、カジュアルに"
+            />
+            <div style="height: 8px"></div>
+
+            <label>編集指示（生成後に利用）</label>
+            <textarea
+              id="editInstruction"
+              placeholder="生成された文章をこう修正してください（例: もっと短く、くだけた口調で）"
+            ></textarea>
+          </div>
+
+          <div>
+            <label>言語</label>
+            <select id="language">
+              <option value="日本語">日本語</option>
+              <option value="English">English</option>
+              <option value="中文">中文</option>
+              <option value="Español">Español</option>
+            </select>
+
+            <div style="height: 8px"></div>
+            <label>トーン（スタイル）</label>
+            <select id="tone">
+              <option value="中立">中立</option>
+              <option value="フォーマル">フォーマル</option>
+              <option value="カジュアル">カジュアル</option>
+              <option value="情緒的">情緒的</option>
+            </select>
+
+            <div style="height: 8px"></div>
+            <label>長さ</label>
+            <select id="lengthOpt">
+              <option value="短め">短め（50〜120字相当）</option>
+              <option value="普通" selected>普通（120〜300字相当）</option>
+              <option value="長め">長め（300〜600字相当）</option>
+            </select>
+
+            <div style="height: 8px"></div>
+            <label>出力形式</label>
+            <select id="format">
+              <option value="通常">通常の文章</option>
+              <option value="箇条書き">箇条書き</option>
+              <option value="詩的">詩的（短い詩）</option>
+            </select>
+
+            <div style="height: 12px"></div>
+
+            <div class="controls">
+              <button id="generateBtn">生成</button>
+              <button id="generateMultiple" class="secondary">
+                連続3件生成
+              </button>
+              <button id="clearHistory" class="secondary">履歴クリア</button>
+            </div>
+
+            <p class="muted" style="margin-top: 8px">
+              注意: Pollinations
+              のブラウザアクセスはCORS制限がかかる場合があります。CORSエラーが出たら警告が表示されます（その場合はプロキシ経由の利用を検討してください）。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          "
+        >
+          <h2 style="margin: 0; font-size: 16px">生成タスク</h2>
+          <div class="muted">
+            同時に何件でも生成できます（個別にキャンセル可能）
+          </div>
+        </div>
+
+        <div id="resultList" class="result-list" style="margin-top: 12px">
+          <!-- タスクカードがここに入る -->
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-top: 0">履歴</h2>
+        <div id="history" class="history-list"></div>
+      </div>
+
+      <footer>
+        このツールは学習用です。商用で利用する場合はAPI利用規約を確認してください。
+      </footer>
+    </div>
+
+    <script>
+      // --- Utility ---
+      function nowId() {
+        return "t" + Math.random().toString(36).slice(2, 9);
+      }
+      function mkPrompt({ keyword, language, tone, lengthOpt, format, extra }) {
+        // build instruction text to encourage the chosen language/tone/length
+        const lenMap = {
+          短め: "短く、簡潔に",
+          普通: "適度な長さで詳しく",
+          長め: "詳細に、やや長めに",
+        };
+        const fmtMap = {
+          通常: "",
+          箇条書き: " 箇条書きで要点を示してください。",
+          詩的: " 短い詩の形で表現してください。",
+        };
+
+        let base = `${keyword}について${language}で${lenMap[lengthOpt]}書いてください。`;
+        base += ` トーン: ${tone}。`;
+        if (extra) base += ` 追加指示: ${extra}。`;
+        base += fmtMap[format] || "";
+        base += ` 出力はそのままの文章でお願いします。`;
+        return base;
+      }
+
+      // --- State ---
+      const tasks = {}; // id -> {ctrl, status, node, ...}
+      const HISTORY_KEY = "simple_textgen_history_v1";
+
+      // --- DOM ---
+      const resultList = document.getElementById("resultList");
+      const historyEl = document.getElementById("history");
+
+      // load history
+      function loadHistory() {
+        const raw = localStorage.getItem(HISTORY_KEY);
+        let arr = [];
+        try {
+          arr = raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          arr = [];
+        }
+        renderHistory(arr);
+      }
+      function saveToHistory(item) {
+        const raw = localStorage.getItem(HISTORY_KEY);
+        let arr = [];
+        try {
+          arr = raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          arr = [];
+        }
+        arr.unshift(item);
+        arr = arr.slice(0, 50); // limit
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(arr));
+        renderHistory(arr);
+      }
+      function clearHistory() {
+        localStorage.removeItem(HISTORY_KEY);
+        renderHistory([]);
+      }
+      function renderHistory(arr) {
+        historyEl.innerHTML = "";
+        if (!arr.length) {
+          historyEl.innerHTML =
+            '<div class="muted">履歴はまだありません。</div>';
+          return;
+        }
+        arr.forEach((it) => {
+          const d = document.createElement("div");
+          d.className = "history-item";
+          d.innerHTML = `<div style="font-weight:600">${
+            it.keyword
+          } <span style="font-weight:400;color:var(--muted)">(${it.language}・${
+            it.tone
+          })</span></div>
+                       <div style="margin-top:6px;white-space:pre-wrap">${it.text.slice(
+                         0,
+                         300
+                       )}${it.text.length > 300 ? "…" : ""}</div>
+                       <div style="margin-top:6px"><button class="small" data-id="${
+                         it.id
+                       }">読み込み</button></div>`;
+          historyEl.appendChild(d);
+          d.querySelector("button").addEventListener("click", () => {
+            // load into generation area and show
+            document.getElementById("keyword").value = it.keyword;
+            document.getElementById("language").value = it.language;
+            document.getElementById("tone").value = it.tone;
+            document.getElementById("extraPrompt").value = "";
+            // create a new task showing this text
+            createTaskCard({
+              id: "hist-" + it.id,
+              keyword: it.keyword,
+              language: it.language,
+              tone: it.tone,
+              lengthOpt: it.lengthOpt || "普通",
+              format: it.format || "通常",
+              status: "done",
+              text: it.text,
+              fromHistory: true,
+            });
+          });
+        });
+      }
+
+      // --- Task UI ---
+      function createTaskCard({
+        id,
+        keyword,
+        language,
+        tone,
+        lengthOpt,
+        format,
+        status = "running",
+        text = "",
+      }) {
+        const card = document.createElement("div");
+        card.className = "task card-task";
+        card.id = id;
+        card.innerHTML = `
+        <div class="task-header">
+          <div style="display:flex;gap:8px;align-items:center">
+            <div class="badge">${language}</div>
+            <div style="font-weight:700">${keyword}</div>
+            <div class="muted" style="font-size:13px">(${tone}・${lengthOpt}・${format})</div>
+          </div>
+          <div class="status" id="${id}-status">${
+          status === "running" ? '<span class="spinner"></span>生成中' : "完了"
+        }</div>
+        </div>
+        <div class="task-body" id="${id}-body">${
+          text || (status === "running" ? "生成中..." : "")
+        }</div>
+        <div class="task-actions" id="${id}-actions"></div>
+      `;
+        resultList.prepend(card);
+
+        const actions = card.querySelector(`#${id}-actions`);
+        // copy
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "small secondary";
+        copyBtn.textContent = "コピー";
+        copyBtn.addEventListener("click", () => {
+          const t = document.getElementById(`${id}-body`).innerText;
+          navigator.clipboard
+            .writeText(t)
+            .then(() => (copyBtn.textContent = "コピー済み"));
+          setTimeout(() => (copyBtn.textContent = "コピー"), 1200);
+        });
+        // save
+        const saveBtn = document.createElement("button");
+        saveBtn.className = "small secondary";
+        saveBtn.textContent = "保存(.txt)";
+        saveBtn.addEventListener("click", () => {
+          const t = document.getElementById(`${id}-body`).innerText;
+          const blob = new Blob([t], { type: "text/plain;charset=utf-8" });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = `${keyword.replace(/\s+/g, "_") || "output"}.txt`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+        });
+
+        // edit (use current editInstruction)
+        const editBtn = document.createElement("button");
+        editBtn.className = "small";
+        editBtn.textContent = "修正";
+        editBtn.addEventListener("click", () => {
+          const inst = document.getElementById("editInstruction").value.trim();
+          if (!inst) {
+            alert("修正指示を入力してください。");
+            return;
+          }
+          const orig = document.getElementById(`${id}-body`).innerText;
+          startGeneration({
+            keyword,
+            language,
+            tone,
+            lengthOpt,
+            format,
+            extra: `以下の文章を修正してください：${inst}\n\n${orig}`,
+          });
+        });
+
+        // cancel
+        const cancelBtn = document.createElement("button");
+        cancelBtn.className = "small warn";
+        cancelBtn.textContent = "キャンセル";
+        cancelBtn.addEventListener("click", () => {
+          const t = tasks[id];
+          if (t && t.ctrl) {
+            t.ctrl.abort();
+          }
+        });
+
+        actions.appendChild(copyBtn);
+        actions.appendChild(saveBtn);
+        actions.appendChild(editBtn);
+        actions.appendChild(cancelBtn);
+
+        return card;
+      }
+
+      // --- Generation logic (Pollinations endpoint) ---
+      async function startGeneration({
+        keyword,
+        language,
+        tone,
+        lengthOpt,
+        format,
+        extra,
+      }) {
+        const id = nowId();
+        const prompt = mkPrompt({
+          keyword,
+          language,
+          tone,
+          lengthOpt,
+          format,
+          extra,
+        });
+        const card = createTaskCard({
+          id,
+          keyword,
+          language,
+          tone,
+          lengthOpt,
+          format,
+          status: "running",
+          text: "",
+        });
+
+        // Abort controller for cancellation
+        const ctrl = new AbortController();
+        tasks[id] = { ctrl, status: "running", id };
+
+        const statusEl = document.getElementById(`${id}-status`);
+        const bodyEl = document.getElementById(`${id}-body`);
+        const actionsEl = document.getElementById(`${id}-actions`);
+
+        try {
+          // Use Pollinations free text endpoint - simple GET
+          const url = `https://text.pollinations.ai/${encodeURIComponent(
+            prompt
+          )}`;
+
+          const resp = await fetch(url, { signal: ctrl.signal });
+          if (!resp.ok) throw new Error("サーバーエラー: " + resp.status);
+          const text = await resp.text();
+
+          bodyEl.innerText = text || "(空のレスポンス)";
+          statusEl.innerHTML = '<span style="color:var(--success)">完了</span>';
+          tasks[id].status = "done";
+          tasks[id].text = text;
+
+          // save to history
+          saveToHistory({
+            id,
+            keyword,
+            language,
+            tone,
+            lengthOpt,
+            format,
+            text,
+            createdAt: Date.now(),
+          });
+        } catch (err) {
+          if (err.name === "AbortError") {
+            bodyEl.innerText = "リクエストがキャンセルされました。";
+            statusEl.innerHTML = `<span style="color:var(--danger)">キャンセル</span>`;
+            tasks[id].status = "cancelled";
+          } else {
+            // CORS or network error handling
+            let msg = err.message || String(err);
+            if (msg.includes("Failed to fetch")) {
+              msg =
+                "ネットワークまたはCORSエラー：ブラウザ直呼び出しでCORS制約がある可能性があります。プロキシ経由での呼び出しを検討してください。";
+            }
+            bodyEl.innerText = "エラー: " + msg;
+            statusEl.innerHTML = `<span style="color:var(--danger)">エラー</span>`;
+            tasks[id].status = "error";
+          }
+        } finally {
+          // hide cancel button if done
+          const btns = actionsEl.querySelectorAll("button.warn");
+          btns.forEach((b) => (b.style.display = "none"));
+        }
+      }
+
+      // --- UI wiring ---
+      document.getElementById("generateBtn").addEventListener("click", () => {
+        const keyword = document.getElementById("keyword").value.trim();
+        if (!keyword) {
+          alert("キーワードを入力してください");
+          return;
+        }
+        const language = document.getElementById("language").value;
+        const tone = document.getElementById("tone").value;
+        const lengthOpt = document.getElementById("lengthOpt").value;
+        const format = document.getElementById("format").value;
+        const extra = document.getElementById("extraPrompt").value.trim();
+        startGeneration({ keyword, language, tone, lengthOpt, format, extra });
+      });
+
+      // 连続3件ボタン（例）
+      document
+        .getElementById("generateMultiple")
+        .addEventListener("click", () => {
+          const k = document.getElementById("keyword").value.trim();
+          if (!k) {
+            alert("キーワードを入力してください");
+            return;
+          }
+          for (let i = 0; i < 3; i++) {
+            // small variety to show parallelism
+            const extra =
+              document.getElementById("extraPrompt").value.trim() +
+              (i ? ` 追加案${i}` : "");
+            startGeneration({
+              keyword: k,
+              language: document.getElementById("language").value,
+              tone: document.getElementById("tone").value,
+              lengthOpt: document.getElementById("lengthOpt").value,
+              format: document.getElementById("format").value,
+              extra,
+            });
+          }
+        });
+
+      document.getElementById("clearHistory").addEventListener("click", () => {
+        if (confirm("履歴を消しますか？")) clearHistory();
+      });
+
+      // initial load
+      loadHistory();
+
+      // expose a helper for dev testing
+      window._startGeneration = startGeneration;
+    </script>
+  </body>
+</html>
